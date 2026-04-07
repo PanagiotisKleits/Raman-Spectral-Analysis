@@ -62,3 +62,52 @@ To study a material using Raman spectroscopy, the necessary equipment is require
 
 
 4.  A detector of the scattered light that possesses particularly high sensitivity. A common device is a photomultiplier or a charge-coupled device (CCD).
+
+### Typical Raman spectra and noise sources
+
+A typical Raman spectrum features a number of peaks, showing the intensity and wavelength position of the scattered light. Each peak corresponds to a specific molecular bond vibration, including individual bonds such as C-C, C=C, N-O, C-H, etc., as well as complex groups of bonds such as polymer chain vibrations, etc.
+
+Generally, the profile with the features of a spectrum (position and relative peak intensity) provides a unique chemical "fingerprint" that can be used to identify a material and distinguish it from all others.
+
+The Raman spectrum from a material will contain information about all the molecules present within the sample. Thus, if there is a mixture of molecules, the Raman spectrum will contain peaks at specific wavelengths that are characteristic of all the different molecules.
+
+As can be understood, a Raman spectrum (especially a spectrum originating from a mixture of materials) can be particularly complex to analyze. Additionally, under real experimental conditions, there are various sources of noise. These sources can be related to the material (sample-dependent artifacts), the experimental setup, and other exogenous factors such as cosmic radiation (non-sample-dependent artifacts). As a result, the spectra we obtain in an experiment are contaminated with structures beyond the characteristics of the material. For this reason, prior to analysis and drawing conclusions, appropriate pre-processing of the spectrum is necessary by identifying and removing these noise sources.
+
+### Methods of dealing with noise
+
+#### Cosmic ray spike removal (despiking)
+Unlike other noise sources, the presence of cosmic ray spikes in spectroscopic data does not depend on the material sample, the laser, or the spectrometer. When high-energy particles hit the detector (CCD camera), electrons are generated due to the photoelectric effect, which are recorded along with the electrons caused by the energy of the scattered Raman photons. This results in some "spikes" appearing at random positions in the data (i.e., they do not correspond to a specific wavelength) that have characteristics of very high intensity and very narrow width.
+
+![despiking.png](attachment:despiking.png)
+
+To address this problem, we need two things:
+
+1. A method for identifying these cosmic spikes within our data that constitute the actual spectrum.
+
+2. A method for removing these structures and replacing them with an appropriate value.
+
+To identify the spikes among the spectroscopic data, one can use the **modified z-score** as a metric, which we will define as:
+
+$$Z_t = \frac{0.6745 \times (\nabla Y_t - M)}{\text{MAD}},$$
+where
+- $\nabla Y_t$ is the discrete difference $\nabla Y_t = Y_t - Y_{t-1},\,\,(t = 2, \dots, n)$. 
+- $M$ is the median of this difference $\nabla Y_t$: $M = $ median($\nabla Y_t$).
+- MAD is the median of the difference $|\nabla Y_t - M|$: MAD $=$ median($|\nabla Y_t - M|$)
+
+The logic is that for each point in our data, we can assign it a z-score. If the score of a point exceeds a threshold $\tau$ that we have set $(|Z_t| > \tau)$, then this data point is marked as a point contributing to the creation of a spike.
+
+Having marked all our spectral data in this way, we have managed to locate the problematic points that create the spikes. Now we must remove them and replace the resulting gap with an appropriate value. This value is derived by calculating the average of the values neighboring the problematic point. Specifically, the interpolated value ($\tilde{Y}_t$) will be:
+
+$$\tilde{Y}_t = \frac{1}{w}\sum_{t-m}^{t+m} Y_t \times \mathbb{I}(Z_t < \tau)$$
+where for the function $\mathbb{I}(u)$ the following applies:
+
+\begin{equation}
+    \mathbb{I}(u)=
+    \begin{cases}
+        1, & \text{if } u\,\,\text{is true}\\
+        0, & \text{if }u\,\,\text{is false}
+    \end{cases}
+\end{equation}
+and $$w = \sum_{t-m}^{t+m} \mathbb{I}(Z_t < \tau)$$
+
+More detailed information regarding the removal of cosmic ray spikes in Raman spectra can be found in the work of Whitaker and Hayes: [Despiking algorithm with modified z-scores, Whitaker et al., Chemometrics and Intelligent Laboratory Systems Vol 179, 15 August 2018.](https://chemrxiv.org/engage/api-gateway/chemrxiv/assets/orp/resource/item/60c73e33469df41c2af4281c/original/a-simple-algorithm-for-despiking-raman-spectra.pdf).
